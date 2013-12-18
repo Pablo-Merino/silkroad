@@ -1,6 +1,7 @@
 module Silkroad
   class Client
     class Error < StandardError; end
+    class NoFundsError < StandardError; end
     attr_reader :uri
 
     DEFAULT_RPC_PORT = 8332
@@ -28,7 +29,11 @@ module Silkroad
           raise Error.new "bitcoind returned HTTP status #{response.status} with no body: #{response.http_header.reason_phrase}"
         else
           response_obj = JSON.parse response.body
-          raise Error.new "bitcoind returned error code #{response_obj['error']['code']}: #{response_obj['error']['message']}"
+          if response_obj['error']['code'] == -6
+            raise NoFundsError.new "bitcoind returned error code #{response_obj['error']['code']}: #{response_obj['error']['message']}"
+          else          
+            raise Error.new "bitcoind returned error code #{response_obj['error']['code']}: #{response_obj['error']['message']}"
+          end
         end
       else
         JSON.parse(response.body)['result']
